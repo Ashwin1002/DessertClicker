@@ -19,10 +19,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,7 +26,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -43,31 +38,28 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dessertclicker.data.Datasource
 import com.example.dessertclicker.model.Dessert
 import com.example.dessertclicker.ui.theme.DessertClickerTheme
+import com.example.dessertclicker.ui.theme.DessertViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(TAG, "onResume Called")
         enableEdgeToEdge()
         setContent {
             DessertClickerTheme {
@@ -154,18 +146,20 @@ private fun shareSoldDessertsInformation(intentContext: Context, dessertsSold: I
 }
 
 @Composable
-fun DesertClickerApp(desserts: List<Dessert>) {
-    var revenue by rememberSaveable { mutableIntStateOf(0) }
-    var desertSold by rememberSaveable { mutableIntStateOf(0) }
+fun DesertClickerApp(desserts: List<Dessert>, dessertViewModel: DessertViewModel = viewModel()) {
+//    var revenue by rememberSaveable { mutableIntStateOf(0) }
+//    var desertSold by rememberSaveable { mutableIntStateOf(0) }
+//
+//    val currentDessertIndex by rememberSaveable { mutableIntStateOf(0) }
+//
+//    var currentDessertPrice by rememberSaveable {
+//        mutableIntStateOf(desserts[currentDessertIndex].price)
+//    }
+//    var currentDessertImageId by rememberSaveable {
+//        mutableIntStateOf(desserts[currentDessertIndex].imageRes)
+//    }
 
-    val currentDessertIndex by rememberSaveable { mutableIntStateOf(0) }
-
-    var currentDessertPrice by rememberSaveable {
-        mutableIntStateOf(desserts[currentDessertIndex].price)
-    }
-    var currentDessertImageId by rememberSaveable {
-        mutableIntStateOf(desserts[currentDessertIndex].imageRes)
-    }
+    val dessertUiState by dessertViewModel.uiState.collectAsState()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -175,8 +169,8 @@ fun DesertClickerApp(desserts: List<Dessert>) {
                 onShareButtonClicked = {
                     shareSoldDessertsInformation(
                         intentContext = intentContext,
-                        dessertsSold = desertSold,
-                        revenue = revenue
+                        dessertsSold = dessertUiState.desertSold,
+                        revenue = dessertUiState.revenue,
                     )
                 },
                 modifier = Modifier
@@ -189,19 +183,11 @@ fun DesertClickerApp(desserts: List<Dessert>) {
 
         Surface(modifier = Modifier.padding(innerPadding)) {
             DesertClickerBody(
-                revenue = revenue,
-                dessertsSold = desertSold,
-                dessertImageId = currentDessertImageId,
+                revenue = dessertUiState.revenue,
+                dessertsSold = dessertUiState.desertSold,
+                dessertImageId = dessertUiState.currentDessertImageId,
                 onDessertClicked = {
-                    // Update the revenue
-                    revenue += currentDessertPrice
-
-                    desertSold++
-
-                    val currentDessert = determineDessertToShow(desserts, desertSold)
-
-                    currentDessertImageId = currentDessert.imageRes
-                    currentDessertPrice = currentDessert.price
+                    dessertViewModel.dessertPressed()
                 },
 
             )
